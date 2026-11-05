@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Large dataset (133MB > GitHub's 100MB file limit) — download with:
+# curl -L -o data/raw/household_power_consumption.zip "https://archive.ics.uci.edu/static/public/235/individual+household+electric+power+consumption.zip" && unzip -o data/raw/household_power_consumption.zip -d data/raw/
+data/raw/household_power_consumption.txt
+
+# Spark outputs (regenerable: spark-submit spark/process_dataset.py)
+data/processed/
+
+# Personal deployment artifacts
+deploy.log
+
+# OS noise
+.DS_Store

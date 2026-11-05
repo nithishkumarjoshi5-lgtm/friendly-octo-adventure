@@ -1,0 +1,3 @@
+# Local-mode PySpark pipeline (Option C in docs/BIGDATA_SETUP.md).
+# NOTE: Spark 4.x requires Java 17 or Java 21 on the machine that runs it.
+pyspark>=4.0

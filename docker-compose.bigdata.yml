@@ -1,0 +1,284 @@
+# ==============================================================================
+# docker-compose.bigdata.yml
+#
+# Big-Data stack for the "Fundamentals of Big Data" college project
+# (UCI Individual Household Electric Power Consumption dataset).
+#
+# Services
+#   namenode / datanode        HDFS storage (apache/hadoop 3.4.1, official image)
+#   hdfs-init                  one-shot job: creates /data/electricity in HDFS and
+#                              uploads the raw .txt dataset from ./data/raw
+#   postgres                   PostgreSQL 16 metastore database for Hive
+#   postgres-jdbc-driver       one-shot job: downloads the PostgreSQL JDBC driver
+#                              jar that the Hive image needs on its classpath
+#   hive-metastore             Apache Hive 4.0.0 Thrift metastore (port 9083)
+#   hive-server2               Apache Hive 4.0.0 HiveServer2 (port 10000, beeline)
+#   spark-master / spark-worker Apache Spark 4.0.5 standalone master/worker
+#                              (UI 8080, RPC 7077, worker UI 8081)
+#
+# Conventions verified against official documentation (Oct 2026):
+#   * apache/hadoop image: role passed as the container command
+#     ("hdfs namenode" / "hdfs datanode"), configuration injected through
+#     FILE.XML_property environment variables (see the official
+#     docker-hadoop-3.4.1 branch config file) and ENSURE_NAMENODE_DIR for
+#     automatic first-boot formatting.
+#   * apache/hive image: SERVICE_NAME / DB_DRIVER / SERVICE_OPTS / IS_RESUME
+#     environment variables, warehouse volume at /opt/hive/data/warehouse and
+#     the PostgreSQL driver mounted at /opt/hive/lib/postgres.jar (official
+#     quickstart + packaging/src/docker/docker-compose.yml).
+#
+# Requirements: Docker Engine 24+ with Docker Compose v2.23.1 or newer
+# (the inline `configs: content:` feature is used to hand core-site.xml /
+# hdfs-site.xml to the Hive containers without extra files in the repo).
+#
+# Start everything:   docker compose -f docker-compose.bigdata.yml up -d
+# Stop everything:    docker compose -f docker-compose.bigdata.yml down
+# Stop + wipe data:   docker compose -f docker-compose.bigdata.yml down -v
+# ==============================================================================
+
+name: electricity-bigdata
+
+# Environment variables shared by every apache/hadoop container.
+# The official hadoop image turns a variable named  FILE.XML_property  into the
+# Hadoop property  <property>  inside FILE.xml  (e.g. CORE-SITE.XML_fs.defaultFS
+# becomes fs.defaultFS in core-site.xml), so all containers agree that the
+# cluster lives at hdfs://namenode:9000.
+x-hadoop-common-env: &hadoop-common-env
+  CORE-SITE.XML_fs.defaultFS: hdfs://namenode:9000
+  HDFS-SITE.XML_dfs.replication: "1"            # single DataNode in this sandbox
+  HDFS-SITE.XML_dfs.permissions.enabled: "false" # keeps a student cluster friction-free
+
+services:
+  # ---------------------------------------------------------------- HDFS ----
+  namenode:
+    image: apache/hadoop:3.4.1
+    hostname: namenode
+    # The official image expects the daemon role as the container command.
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"   # NameNode web UI  -> http://localhost:9870
+      - "9000:9000"   # HDFS RPC (fs.defaultFS endpoint)
+    environment:
+      <<: *hadoop-common-env
+      # NameNode storage lives on a named volume; ENSURE_NAMENODE_DIR makes the
+      # image format it automatically on the very first boot only.
+      ENSURE_NAMENODE_DIR: /opt/hadoop/data/namenode
+      HDFS-SITE.XML_dfs.namenode.name.dir: /opt/hadoop/data/namenode
+    volumes:
+      - hadoop_namenode:/opt/hadoop/data/namenode
+    healthcheck:
+      # Healthy once the NameNode has left safemode (i.e. it is writable).
+      test: ["CMD-SHELL", "/opt/hadoop/bin/hdfs dfsadmin -fs hdfs://localhost:9000 -safemode get | grep -q OFF"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  datanode:
+    image: apache/hadoop:3.4.1
+    hostname: datanode
+    command: ["hdfs", "datanode"]
+    ports:
+      - "9864:9864"   # DataNode web UI -> http://localhost:9864
+    environment:
+      <<: *hadoop-common-env
+      HDFS-SITE.XML_dfs.datanode.data.dir: /opt/hadoop/data/datanode
+    volumes:
+      - hadoop_datanode:/opt/hadoop/data/datanode
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+  # One-shot seeding job: creates /data/electricity in HDFS and copies the raw
+  # dataset in, which is exactly the path the Hive external table points at
+  # (hive/create_tables.hql). Safe to re-run: it skips if the file is there.
+  hdfs-init:
+    image: apache/hadoop:3.4.1
+    environment: *hadoop-common-env
+    volumes:
+      - ./data/raw:/seed:ro
+    depends_on:
+      namenode:
+        condition: service_healthy
+    restart: "no"
+    command: |
+      until /opt/hadoop/bin/hdfs dfs -mkdir -p /data/electricity; do
+        echo "[hdfs-init] waiting for the NameNode to accept writes..."; sleep 5
+      done
+      if /opt/hadoop/bin/hdfs dfs -test -e /data/electricity/household_power_consumption.txt; then
+        echo "[hdfs-init] dataset already present in HDFS - skipping upload"
+      else
+        until /opt/hadoop/bin/hdfs dfs -put /seed/household_power_consumption.txt /data/electricity/; do
+          echo "[hdfs-init] waiting for a live DataNode..."; sleep 5
+        done
+        echo "[hdfs-init] uploaded household_power_consumption.txt to HDFS"
+      fi
+
+  # ---------------------------------------------------------- PostgreSQL ----
+  # Backs the Hive metastore so table definitions survive container restarts.
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: metastore_db
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+    volumes:
+      - hive_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # One-shot helper: the apache/hive image does NOT ship the PostgreSQL JDBC
+  # driver (the official quickstart asks you to mount it yourself), so this
+  # service downloads it once into a shared volume. hive-metastore copies it to
+  # /opt/hive/lib/postgres.jar (the location used by the official examples).
+  postgres-jdbc-driver:
+    image: curlimages/curl:8.11.1
+    user: root
+    volumes:
+      - jdbc_drivers:/jdbc
+    command: >
+      --fail --silent --show-error --location
+      --output /jdbc/postgresql-42.7.5.jar
+      https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.5/postgresql-42.7.5.jar
+    restart: "no"
+
+  # ---------------------------------------------------------------- Hive ----
+  hive-metastore:
+    image: apache/hive:4.0.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-jdbc-driver:
+        condition: service_completed_successfully
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      # Point the image's own configuration hook at our mounted Hadoop configs
+      # (the entrypoint symlinks them into the Hive conf dir), so the metastore
+      # also knows where HDFS lives.
+      HIVE_CUSTOM_CONF_DIR: /hive-custom-conf
+      # Mirrors the SERVICE_OPTS layout of the official Hive docker-compose.yml.
+      SERVICE_OPTS: >-
+        -Xmx1G
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore_db
+        -Djavax.jdo.option.ConnectionUserName=hive
+        -Djavax.jdo.option.ConnectionPassword=hive
+    # Prepend the driver copy, then hand over to the image's normal entrypoint
+    # (which runs `schematool -initOrUpgradeSchema` for Hive 4, so restarts are
+    # safe, and finally starts the metastore service).
+    entrypoint: ["/bin/bash", "-c", "cp /jdbc/postgresql-42.7.5.jar /opt/hive/lib/postgres.jar && exec /entrypoint.sh"]
+    volumes:
+      - hive_warehouse:/opt/hive/data/warehouse
+      - jdbc_drivers:/jdbc:ro
+    configs:
+      - source: core_site
+        target: /hive-custom-conf/core-site.xml
+      - source: hdfs_site
+        target: /hive-custom-conf/hdfs-site.xml
+    ports:
+      - "9083:9083"   # Hive metastore Thrift port
+    restart: unless-stopped
+
+  hive-server2:
+    image: apache/hive:4.0.0
+    depends_on:
+      - hive-metastore
+      - namenode
+    environment:
+      SERVICE_NAME: hiveserver2
+      HIVE_SERVER2_THRIFT_PORT: 10000
+      IS_RESUME: "true"   # schema is owned by the metastore service
+      HIVE_CUSTOM_CONF_DIR: /hive-custom-conf
+      SERVICE_OPTS: >-
+        -Xmx1G
+        -Dhive.metastore.uris=thrift://hive-metastore:9083
+    volumes:
+      - hive_warehouse:/opt/hive/data/warehouse
+      # Project folders mounted so beeline can run the .hql files and the
+      # processed outputs land back on the host filesystem.
+      - ./hive:/opt/work/hive:ro
+      - ./data:/opt/work/data
+    configs:
+      - source: core_site
+        target: /hive-custom-conf/core-site.xml
+      - source: hdfs_site
+        target: /hive-custom-conf/hdfs-site.xml
+    ports:
+      - "10000:10000"  # HiveServer2 Thrift (beeline)  -> jdbc:hive2://localhost:10000
+      - "10002:10002"  # HiveServer2 web UI -> http://localhost:10002
+    restart: unless-stopped
+
+  # --------------------------------------------------------------- Spark ----
+  # Optional standalone cluster. Both pipeline scripts default to --master
+  # local[*] and also run happily with `docker compose exec spark-master
+  # spark-submit --master local[*] ...` without the worker.
+  spark-master:
+    image: apache/spark:4.0.5-python3   # -python3 variant: PySpark support built in
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master"]
+    environment:
+      SPARK_MASTER_HOST: spark-master
+    ports:
+      - "8080:8080"   # Spark master web UI -> http://localhost:8080
+      - "7077:7077"   # spark-submit RPC port (spark://localhost:7077)
+    volumes:
+      - ./spark:/opt/work/spark
+      - ./data:/opt/work/data
+    working_dir: /opt/work
+    restart: unless-stopped
+
+  spark-worker:
+    image: apache/spark:4.0.5-python3
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    environment:
+      SPARK_WORKER_CORES: "2"
+      SPARK_WORKER_MEMORY: "2g"
+    ports:
+      - "8081:8081"   # Spark worker web UI -> http://localhost:8081
+    depends_on:
+      - spark-master
+    volumes:
+      - ./spark:/opt/work/spark
+      - ./data:/opt/work/data
+    working_dir: /opt/work
+    restart: unless-stopped
+
+# ------------------------------------------------------------- configs ------
+# Inline Hadoop client configuration handed to the Hive containers (requires
+# Docker Compose v2.23.1+). They mirror the env-var config used above.
+configs:
+  core_site:
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <configuration>
+        <property>
+          <name>fs.defaultFS</name>
+          <value>hdfs://namenode:9000</value>
+        </property>
+      </configuration>
+  hdfs_site:
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <configuration>
+        <property>
+          <name>dfs.replication</name>
+          <value>1</value>
+        </property>
+        <property>
+          <name>dfs.permissions.enabled</name>
+          <value>false</value>
+        </property>
+      </configuration>
+
+# ------------------------------------------------------------- volumes ------
+volumes:
+  hadoop_namenode:    # NameNode metadata (fsimage/edit logs)
+  hadoop_datanode:    # actual HDFS block data
+  hive_postgres:      # metastore database contents
+  hive_warehouse:     # /opt/hive/data/warehouse shared by both Hive services
+  jdbc_drivers:       # PostgreSQL JDBC jar downloaded once by the helper service

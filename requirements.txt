@@ -1,0 +1,12 @@
+# Core dependencies for the interactive dashboard (tested with Python 3.13)
+streamlit>=1.66
+plotly>=7.1
+pandas>=3.1
+numpy>=2.5
+openpyxl>=3.1.5   # reads the bundled UCI Online Retail .xlsx sample
+kaleido>=1.0      # server-side PNG export of Plotly charts (Reports page)
+pytest>=9.2
+
+# Optional extras (not required to run the dashboard itself):
+#   pyarrow  -> enables loading pipeline Parquet output from data/processed/
+#   pyspark>=4.0 -> local-mode Big Data pipeline, see requirements-spark.txt
