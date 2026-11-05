@@ -1,0 +1,11 @@
+# HHX dashboard theme — see src/theme.py for the full design system.
+[theme]
+base = "dark"
+primaryColor = "#F59E0B"
+backgroundColor = "#0B0E14"
+secondaryBackgroundColor = "#131720"
+textColor = "#E7ECF3"
+font = "sans serif"
+
+[server]
+headless = true
