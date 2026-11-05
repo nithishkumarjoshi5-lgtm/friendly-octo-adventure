@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 920" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#B45309"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1440" height="920" fill="#F8FAFC"/>
+
+  <!-- Title -->
+  <text x="60" y="46" font-size="26" font-weight="700" fill="#0F172A">Household Electricity Analytics — System Architecture</text>
+  <text x="60" y="72" font-size="13.5" fill="#475569">Big Data course project · interactive pandas/Plotly/Streamlit front end + Hadoop/Hive/Spark batch pipeline · UCI Individual Household Electric Power Consumption</text>
+
+  <!-- ================= Lane 1 : interactive analytics path (TESTED) ================= -->
+  <text x="60" y="118" font-size="16" font-weight="700" fill="#0F172A">Interactive analytics path</text>
+  <rect x="248" y="103" width="72" height="21" rx="10" fill="#059669"/>
+  <text x="284" y="117.5" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">TESTED</text>
+
+  <!-- B1 Data sources -->
+  <rect x="50" y="130" width="190" height="130" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+  <text x="145" y="153" font-size="14.5" font-weight="700" fill="#065F46" text-anchor="middle">Data Sources</text>
+  <text x="62" y="175" font-size="11" fill="#334155">UCI power .txt — 2,075,259 rows</text>
+  <text x="62" y="192" font-size="11" fill="#334155">UCI Online Retail .xlsx — 541,909 rows</text>
+  <text x="62" y="209" font-size="11" fill="#334155">User CSV upload (≤ 200 MB)</text>
+  <text x="62" y="226" font-size="11" fill="#334155">Pipeline Parquet (data/processed)</text>
+
+  <!-- B2 Ingestion -->
+  <rect x="280" y="130" width="190" height="130" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+  <text x="375" y="153" font-size="14.5" font-weight="700" fill="#065F46" text-anchor="middle">Ingestion</text>
+  <text x="292" y="175" font-size="11" fill="#334155">src/data_loader.py</text>
+  <text x="292" y="192" font-size="11" fill="#334155">• bundled sample loaders</text>
+  <text x="292" y="209" font-size="11" fill="#334155">• upload validation + parser</text>
+  <text x="292" y="226" font-size="11" fill="#334155">• chunked reader (100k rows)</text>
+  <text x="292" y="243" font-size="11" fill="#334155">• file metadata + type inference</text>
+
+  <!-- B3 Validation &amp; cleaning -->
+  <rect x="510" y="130" width="190" height="130" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+  <text x="605" y="153" font-size="14.5" font-weight="700" fill="#065F46" text-anchor="middle">Validation &amp; Cleaning</text>
+  <text x="522" y="175" font-size="11" fill="#334155">data_validation.py / data_cleaning.py</text>
+  <text x="522" y="192" font-size="11" fill="#334155">• normalize columns, parse dates</text>
+  <text x="522" y="209" font-size="11" fill="#334155">• missing: keep / drop / fill</text>
+  <text x="522" y="226" font-size="11" fill="#334155">• duplicates: keep / drop</text>
+  <text x="522" y="243" font-size="11" fill="#334155">• quality warnings + profiles</text>
+
+  <!-- B4 Analytics -->
+  <rect x="740" y="130" width="190" height="130" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+  <text x="835" y="153" font-size="14.5" font-weight="700" fill="#065F46" text-anchor="middle">Analytics (pandas)</text>
+  <text x="752" y="175" font-size="11" fill="#334155">general_analytics.py</text>
+  <text x="752" y="192" font-size="11" fill="#334155">• summaries · correlations · outliers</text>
+  <text x="752" y="209" font-size="11" fill="#334155">electricity_analytics.py</text>
+  <text x="752" y="226" font-size="11" fill="#334155">• kWh (kW/60) · hourly/weekday/</text>
+  <text x="752" y="243" font-size="11" fill="#334155">  monthly profiles · peaks · compare</text>
+
+  <!-- B5 Visualization -->
+  <rect x="970" y="130" width="190" height="130" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+  <text x="1065" y="153" font-size="14.5" font-weight="700" fill="#065F46" text-anchor="middle">Visualization</text>
+  <text x="982" y="175" font-size="11" fill="#334155">visualization.py (Plotly)</text>
+  <text x="982" y="192" font-size="11" fill="#334155">• time series · hourly profile</text>
+  <text x="982" y="209" font-size="11" fill="#334155">• monthly trend · sub-metering</text>
+  <text x="982" y="226" font-size="11" fill="#334155">• histograms · boxes · heatmaps</text>
+  <text x="982" y="243" font-size="11" fill="#334155">• auto-downsample ≤ 10k points</text>
+
+  <!-- B6 Dashboard -->
+  <rect x="1200" y="130" width="190" height="130" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+  <text x="1295" y="153" font-size="14.5" font-weight="700" fill="#065F46" text-anchor="middle">Streamlit Dashboard</text>
+  <text x="1212" y="175" font-size="11" fill="#334155">app.py — 6 pages</text>
+  <text x="1212" y="192" font-size="11" fill="#334155">Overview · Explorer · Statistics</text>
+  <text x="1212" y="209" font-size="11" fill="#334155">Electricity · Custom Viz · Reports</text>
+  <text x="1212" y="226" font-size="11" fill="#334155">session state + @st.cache_data</text>
+  <text x="1212" y="243" font-size="11" fill="#334155">CSV / TXT / MD / PNG exports</text>
+
+  <!-- Lane 1 arrows -->
+  <line x1="240" y1="195" x2="278" y2="195" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="259" y="187" font-size="10" fill="#475569" text-anchor="middle">read</text>
+  <line x1="470" y1="195" x2="508" y2="195" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="489" y="187" font-size="10" fill="#475569" text-anchor="middle">parsed df</text>
+  <line x1="700" y1="195" x2="738" y2="195" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="719" y="187" font-size="10" fill="#475569" text-anchor="middle">clean df</text>
+  <line x1="930" y1="195" x2="968" y2="195" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="949" y="187" font-size="10" fill="#475569" text-anchor="middle">aggregates</text>
+  <line x1="1160" y1="195" x2="1198" y2="195" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1179" y="187" font-size="10" fill="#475569" text-anchor="middle">figures</text>
+
+  <!-- ================= Lane 2 : serving (edge) ================= -->
+  <!-- Users -->
+  <rect x="50" y="310" width="190" height="90" rx="10" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+  <text x="145" y="338" font-size="14.5" font-weight="700" fill="#1E40AF" text-anchor="middle">Users</text>
+  <text x="62" y="360" font-size="11" fill="#334155">browser — course evaluators</text>
+  <text x="62" y="377" font-size="11" fill="#334155">and demo audience</text>
+
+  <!-- Cloudflare Tunnel -->
+  <rect x="300" y="310" width="220" height="90" rx="10" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+  <text x="410" y="338" font-size="14.5" font-weight="700" fill="#1E40AF" text-anchor="middle">Cloudflare Tunnel (edge)</text>
+  <text x="312" y="360" font-size="11" fill="#334155">exposes localhost:8501 as a public</text>
+  <text x="312" y="377" font-size="11" fill="#334155">URL — no open firewall ports</text>
+
+  <!-- Dashboard -> Tunnel -> Users -->
+  <path d="M 1295 260 L 1295 355 L 522 355" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="900" y="347" font-size="10" fill="#475569" text-anchor="middle">serve (streamlit run app.py)</text>
+  <line x1="300" y1="355" x2="242" y2="355" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="271" y="347" font-size="10" fill="#475569" text-anchor="middle">https</text>
+
+  <!-- ================= Lane 3 : Big Data backend (PROVIDED) ================= -->
+  <text x="60" y="478" font-size="16" font-weight="700" fill="#0F172A">Big Data batch pipeline</text>
+  <rect x="292" y="463" width="98" height="21" rx="10" fill="#D97706"/>
+  <text x="341" y="477.5" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">PROVIDED</text>
+  <text x="404" y="478" font-size="12" fill="#78716C">docker-compose.bigdata.yml · not executed in this build (no JVM/Docker available)</text>
+
+  <!-- raw file -->
+  <rect x="50" y="510" width="190" height="110" rx="10" fill="#FFFBEB" stroke="#D97706" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="145" y="533" font-size="14" font-weight="700" fill="#92400E" text-anchor="middle">Raw dataset</text>
+  <text x="62" y="555" font-size="11" fill="#334155">household_power_consumption.txt</text>
+  <text x="62" y="572" font-size="11" fill="#334155">';' separated · '?' = missing</text>
+  <text x="62" y="589" font-size="11" fill="#334155">~130 MB · 1 row / minute</text>
+  <text x="62" y="606" font-size="11" fill="#334155">Dec 2006 → Nov 2010</text>
+
+  <!-- HDFS -->
+  <rect x="280" y="510" width="190" height="110" rx="10" fill="#FFFBEB" stroke="#D97706" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="375" y="533" font-size="14" font-weight="700" fill="#92400E" text-anchor="middle">HDFS (Hadoop 3.4.1)</text>
+  <text x="292" y="555" font-size="11" fill="#334155">namenode + datanode</text>
+  <text x="292" y="572" font-size="11" fill="#334155">/data/electricity</text>
+  <text x="292" y="589" font-size="11" fill="#334155">auto-upload on stack start</text>
+  <text x="292" y="606" font-size="11" fill="#334155">NameNode UI :9870</text>
+
+  <!-- Hive -->
+  <rect x="510" y="460" width="190" height="100" rx="10" fill="#FFFBEB" stroke="#D97706" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="605" y="483" font-size="14" font-weight="700" fill="#92400E" text-anchor="middle">Hive 4 + PostgreSQL</text>
+  <text x="522" y="505" font-size="11" fill="#334155">create_tables.hql → power_clean</text>
+  <text x="522" y="522" font-size="11" fill="#334155">analytics_queries.hql</text>
+  <text x="522" y="539" font-size="11" fill="#334155">6 SQL answers for the report</text>
+
+  <!-- Spark -->
+  <rect x="510" y="600" width="190" height="100" rx="10" fill="#FFFBEB" stroke="#D97706" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="605" y="623" font-size="14" font-weight="700" fill="#92400E" text-anchor="middle">PySpark 4</text>
+  <text x="522" y="645" font-size="11" fill="#334155">process_dataset.py (clean)</text>
+  <text x="522" y="662" font-size="11" fill="#334155">electricity_analysis.py</text>
+  <text x="522" y="679" font-size="11" fill="#334155">local[*] or spark://master:7077</text>
+
+  <!-- Parquet output -->
+  <rect x="740" y="600" width="190" height="100" rx="10" fill="#FFFBEB" stroke="#D97706" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="835" y="623" font-size="14" font-weight="700" fill="#92400E" text-anchor="middle">Processed output</text>
+  <text x="752" y="645" font-size="11" fill="#334155">data/processed/</text>
+  <text x="752" y="662" font-size="11" fill="#334155">power_consumption_parquet/</text>
+  <text x="752" y="679" font-size="11" fill="#334155">hourly / daily aggregates .csv</text>
+
+  <!-- optional Pig note -->
+  <text x="950" y="630" font-size="11.5" fill="#78716C">+ optional Pig job</text>
+  <text x="950" y="647" font-size="11.5" fill="#78716C">(pig -x local) — same analysis,</text>
+  <text x="950" y="664" font-size="11.5" fill="#78716C">local filesystem, provided only</text>
+
+  <!-- Lane 3 arrows -->
+  <line x1="240" y1="565" x2="278" y2="565" stroke="#B45309" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-amber)"/>
+  <text x="259" y="557" font-size="10" fill="#B45309" text-anchor="middle">put</text>
+  <path d="M 470 545 L 490 545 L 490 510 L 508 510" fill="none" stroke="#B45309" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-amber)"/>
+  <text x="489" y="500" font-size="10" fill="#B45309" text-anchor="end">beeline</text>
+  <path d="M 470 585 L 490 585 L 490 650 L 508 650" fill="none" stroke="#B45309" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-amber)"/>
+  <text x="489" y="640" font-size="10" fill="#B45309" text-anchor="end">spark-submit</text>
+  <line x1="700" y1="650" x2="738" y2="650" stroke="#B45309" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-amber)"/>
+  <text x="719" y="642" font-size="10" fill="#B45309" text-anchor="middle">write.parquet</text>
+
+  <!-- Parquet -> Dashboard feed (dashed elbow) -->
+  <path d="M 835 600 L 835 425 L 1295 425 L 1295 262" fill="none" stroke="#B45309" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-amber)"/>
+  <text x="1065" y="417" font-size="10.5" fill="#B45309" text-anchor="middle">load processed parquet — Project Overview page (“Load pipeline output”)</text>
+
+  <!-- ================= Legend ================= -->
+  <rect x="50" y="745" width="1340" height="118" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+  <text x="70" y="772" font-size="14" font-weight="700" fill="#0F172A">Legend</text>
+  <rect x="70" y="788" width="26" height="16" rx="4" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+  <text x="106" y="801" font-size="12" fill="#334155">Tested in this build — Python 3.13 path (dashboard, analytics, both UCI datasets)</text>
+  <rect x="70" y="814" width="26" height="16" rx="4" fill="#FFFBEB" stroke="#D97706" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="106" y="827" font-size="12" fill="#334155">Provided, not executed here — JVM/Docker components (HDFS, Hive, Spark, Pig, docker-compose.bigdata.yml)</text>
+  <line x1="700" y1="796" x2="760" y2="796" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="772" y="801" font-size="12" fill="#334155">runtime data flow (exercised by tests)</text>
+  <line x1="700" y1="822" x2="760" y2="822" stroke="#B45309" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-amber)"/>
+  <text x="772" y="827" font-size="12" fill="#334155">pipeline output feed (provided components)</text>
+  <rect x="1060" y="788" width="26" height="16" rx="4" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+  <text x="1096" y="801" font-size="12" fill="#334155">Edge &amp; consumers — tunnel config provided,</text>
+  <text x="1096" y="817" font-size="12" fill="#334155">live public serving not part of test matrix</text>
+
+  <text x="60" y="898" font-size="11" fill="#94A3B8">Full setup and execution commands: docs/BIGDATA_SETUP.md · verification log: reports/TESTING_RESULTS.md</text>
+</svg>
